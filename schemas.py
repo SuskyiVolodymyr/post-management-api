@@ -5,8 +5,8 @@ from pydantic import BaseModel
 
 class PostBase(BaseModel):
     text: str
-    auto_reply: bool
-    auto_reply_time: int
+    auto_reply: bool = False
+    auto_reply_time: int = 0
 
 
 class PostCreate(PostBase):
