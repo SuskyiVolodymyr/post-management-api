@@ -7,3 +7,6 @@ sqlalchemy-stubs==0.4
 python-dotenv==1.0.1
 aiohttp==3.10.10
 aiosqlite==0.20.0
+PyJWT==2.9.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.12
