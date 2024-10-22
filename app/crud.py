@@ -9,8 +9,10 @@ def get_all_posts(db: Session):
     return db.execute(select(models.Post)).scalars().all()
 
 
-def create_post(db: Session, post: schemas.PostCreate):
+def create_post(db: Session, post: schemas.PostCreate, author_id: int):
     db_post = models.Post(
+        author_id=author_id,
+        title=post.title,
         text=post.text,
         auto_reply=post.auto_reply,
         auto_reply_time=post.auto_reply_time,

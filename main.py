@@ -2,12 +2,15 @@ from datetime import timedelta
 
 from fastapi import FastAPI, Depends, status, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 
 from db.engine import SessionLocal
 
 from app import crud as app_crud, schemas as app_schemas
+from db.models import User
 from user import crud as user_crud, schemas as user_schemas, auth
+from user.auth import SECRET_KEY, ALGORITHM
 
 app = FastAPI()
 
@@ -21,6 +24,27 @@ def get_db() -> Session:
         yield db
     finally:
         db.close()
+
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    user = user_crud.get_user_by_email(db, email=email)
+    if user is None:
+        raise credentials_exception
+    return user
 
 
 @app.post("/register/", response_model=user_schemas.UserResponse)
@@ -53,25 +77,25 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 
 @app.get("/posts/", response_model=list[app_schemas.Post])
-def get_posts(db: Session = Depends(get_db)):
+def get_posts(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return app_crud.get_all_posts(db=db)
 
 
 @app.post("/posts/", response_model=app_schemas.Post)
-def create_post(post: app_schemas.PostCreate, db: Session = Depends(get_db)):
-    return app_crud.create_post(db=db, post=post)
+def create_post(post: app_schemas.PostCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return app_crud.create_post(db=db, post=post, author_id=current_user.id)
 
 
 @app.put("/posts/{post_id}", response_model=app_schemas.Post)
-def update_post(post_id: int, post: app_schemas.PostCreate, db: Session = Depends(get_db)):
+def update_post(post_id: int, post: app_schemas.PostCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return app_crud.update_post(db=db, post_id=post_id, post=post)
 
 
 @app.get("/posts/{post_id}", response_model=app_schemas.Post)
-def get_post_by_id(post_id: int, db: Session = Depends(get_db)):
+def get_post_by_id(post_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return app_crud.get_post_by_id(db=db, post_id=post_id)
 
 
 @app.delete("/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(post_id: int, db: Session = Depends(get_db)):
+def delete_post(post_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return app_crud.delete_post(db=db, post_id=post_id)
