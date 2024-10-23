@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import List
 
 from fastapi import FastAPI, Depends, status, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -124,3 +125,8 @@ def get_comment_by_id(comment_id: int, db: Session = Depends(get_db), current_us
 @app.delete("/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_comment(comment_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return app_crud.delete_comment(db=db, comment_id=comment_id)
+
+
+@app.get("/comments-daily-breakdown/", response_model=List[dict])
+def get_comments_daily_breakdown(date_from: str, date_to: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return app_crud.comments_analysis(db=db, date_from=date_from, date_to=date_to)
