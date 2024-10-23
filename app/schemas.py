@@ -22,3 +22,22 @@ class Post(PostBase):
 
     class Config:
         orm_mode = True
+
+
+class CommentBase(BaseModel):
+    text: str
+    post_id: int
+
+
+class CommentCreate(CommentBase):
+    pass
+
+
+class Comment(CommentBase):
+    id: int
+    author_id: int
+    date_time_created: datetime
+    is_blocked: bool
+
+    class Config:
+        orm_mode = True

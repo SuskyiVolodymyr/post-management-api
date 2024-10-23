@@ -99,3 +99,28 @@ def get_post_by_id(post_id: int, db: Session = Depends(get_db), current_user: Us
 @app.delete("/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(post_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return app_crud.delete_post(db=db, post_id=post_id)
+
+
+@app.get("/comments/", response_model=list[app_schemas.Comment])
+def get_comments(post_id: int | None = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return app_crud.get_all_comments(db=db, post_id=post_id)
+
+
+@app.post("/comments/", response_model=app_schemas.Comment)
+def create_comment(comment: app_schemas.CommentCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return app_crud.create_comment(db=db, comment=comment, author_id=current_user.id)
+
+
+@app.put("/comments/{comment_id}", response_model=app_schemas.Comment)
+def update_comment(comment_id: int, comment: app_schemas.CommentCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return app_crud.update_comment(db=db, comment_id=comment_id, comment=comment)
+
+
+@app.get("/comments/{comment_id}", response_model=app_schemas.Comment)
+def get_comment_by_id(comment_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return app_crud.get_comment_by_id(db=db, comment_id=comment_id)
+
+
+@app.delete("/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_comment(comment_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return app_crud.delete_comment(db=db, comment_id=comment_id)
