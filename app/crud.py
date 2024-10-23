@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from AI.ai_tools import generate_comment_reply
 from app import schemas
 from db import models
 
@@ -58,9 +59,20 @@ def create_comment(db: Session, comment: schemas.CommentCreate, author_id: int):
         text=comment.text,
         post_id=comment.post_id
     )
+    post = get_post_by_id(db=db, post_id=comment.post_id)
     db.add(db_comment)
     db.commit()
     db.refresh(db_comment)
+
+    if post.auto_reply:
+        reply = models.Comment(
+            author_id=post.author_id,
+            text=generate_comment_reply(comment.text, post.text),
+            post_id=post.id
+        )
+        db.add(reply)
+        db.commit()
+
     return db_comment
 
 
