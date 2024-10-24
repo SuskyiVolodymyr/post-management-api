@@ -92,7 +92,7 @@ def create_comment(db: Session, comment: schemas.CommentCreate, author_id: int):
         author_id=author_id,
         text=comment.text,
         post_id=comment.post_id,
-        is_blocked=is_blocked
+        is_blocked=is_blocked,
     )
     post = get_post_by_id(db=db, post_id=comment.post_id)
     db.add(db_comment)
@@ -103,7 +103,7 @@ def create_comment(db: Session, comment: schemas.CommentCreate, author_id: int):
         reply = models.Comment(
             author_id=post.author_id,
             text=generate_comment_reply(comment.text, post.text),
-            post_id=post.id
+            post_id=post.id,
         )
         db.add(reply)
         db.commit()
@@ -112,7 +112,9 @@ def create_comment(db: Session, comment: schemas.CommentCreate, author_id: int):
 
 
 def get_comment_by_id(db: Session, comment_id: int):
-    return db.execute(select(models.Comment).where(models.Comment.id == comment_id)).scalar()
+    return db.execute(
+        select(models.Comment).where(models.Comment.id == comment_id)
+    ).scalar()
 
 
 def update_comment(db: Session, comment_id: int, comment: schemas.CommentCreate):
@@ -145,13 +147,11 @@ def comments_analysis(db: Session, date_from: str, date_to: str):
         db.query(
             func.date(models.Comment.date_time_created).label("day"),
             func.count(models.Comment.id).label("total_comments"),
-            func.count(
-                models.Comment.id
-            ).filter(models.Comment.is_blocked == True).label("blocked_comments")
+            func.count(models.Comment.id)
+            .filter(models.Comment.is_blocked == True)
+            .label("blocked_comments"),
         )
-        .filter(
-            models.Comment.date_time_created.between(date_from_dt, date_to_dt)
-        )
+        .filter(models.Comment.date_time_created.between(date_from_dt, date_to_dt))
         .group_by(func.date(models.Comment.date_time_created))
         .order_by(func.date(models.Comment.date_time_created))
         .all()
@@ -161,7 +161,7 @@ def comments_analysis(db: Session, date_from: str, date_to: str):
         {
             "day": result.day,
             "total_comments": result.total_comments,
-            "blocked_comments": result.blocked_comments
+            "blocked_comments": result.blocked_comments,
         }
         for result in results
     ]

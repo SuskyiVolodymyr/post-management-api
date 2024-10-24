@@ -18,8 +18,7 @@ def generate_comment_reply(comment: str, post: str):
     )
 
     response = prompt.generate_content(
-        contents=prompt.assemble_contents(comment=comment, post=post),
-        stream=False
+        contents=prompt.assemble_contents(comment=comment, post=post), stream=False
     )
     print(response.text)
     return response.text
@@ -34,18 +33,18 @@ generation_config = {
 safety_settings = [
     SafetySetting(
         category=SafetySetting.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-        threshold=SafetySetting.HarmBlockThreshold.OFF
+        threshold=SafetySetting.HarmBlockThreshold.OFF,
     ),
     SafetySetting(
         category=SafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-        threshold=SafetySetting.HarmBlockThreshold.OFF
+        threshold=SafetySetting.HarmBlockThreshold.OFF,
     ),
     SafetySetting(
         category=SafetySetting.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-        threshold=SafetySetting.HarmBlockThreshold.OFF
+        threshold=SafetySetting.HarmBlockThreshold.OFF,
     ),
     SafetySetting(
         category=SafetySetting.HarmCategory.HARM_CATEGORY_HARASSMENT,
-        threshold=SafetySetting.HarmBlockThreshold.OFF
+        threshold=SafetySetting.HarmBlockThreshold.OFF,
     ),
 ]
