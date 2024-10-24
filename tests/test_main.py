@@ -9,13 +9,14 @@ from db.engine import Base
 from db.models import User
 from main import app, get_db
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///./test.db"
 
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    SQLALCHEMY_TEST_DATABASE_URL, connect_args={"check_same_thread": False}
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+Base.metadata.create_all(bind=engine)
 
 DEFAULT_POST_DATA = {
     "title": "test",
@@ -25,32 +26,30 @@ DEFAULT_POST_DATA = {
 }
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
+def client():
+    return TestClient(app)
+
+
+@pytest.fixture
 def db():
-    Base.metadata.create_all(bind=engine)
+    db = TestingSessionLocal()
     try:
-        db = TestingSessionLocal()
         yield db
     finally:
         db.close()
         Base.metadata.drop_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
 
 
-def override_get_db():
-    try:
-        db = TestingSessionLocal()
-        yield db
-    finally:
-        db.close()
-
-
-app.dependency_overrides[get_db] = override_get_db
-
-
-@pytest.fixture(scope="module")
-def client(db):
-    with TestClient(app) as c:
-        yield c
+@pytest.fixture
+def override_get_db(db):
+    def _override_get_db():
+        try:
+            yield db
+        finally:
+            pass
+    app.dependency_overrides[get_db] = _override_get_db
 
 
 def create_test_user(client, email, password):
@@ -66,7 +65,7 @@ def get_auth_token(client, email, password):
     return response.json()["access_token"]
 
 
-def test_user_registration(client, db):
+def test_user_registration(client, db, override_get_db):
     response = client.post("/register/", json={"email": "1@1.com", "password": "test"})
     assert response.status_code == 201
     assert response.json()["email"] == "1@1.com"
@@ -77,7 +76,7 @@ def test_user_registration(client, db):
     assert db_user.hashed_password != "test"
 
 
-def test_login(client):
+def test_login(client, db, override_get_db):
     create_test_user(client, "1@1.com", "test")
 
     response = client.post("/token/", data={"username": "1@1.com", "password": "test"})
@@ -86,15 +85,15 @@ def test_login(client):
     assert response.json()["token_type"] == "bearer"
 
 
-def test_get_posts(client):
+def test_get_posts(client, override_get_db):
     create_test_user(client, "1@1.com", "test")
-    get_auth_token(client, "1@1.com", "test")
+    token = get_auth_token(client, "1@1.com", "test")
 
-    response = client.get("/posts/")
+    response = client.get("/posts/", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
 
 
-def test_get_post_by_id(client):
+def test_get_post_by_id(client, override_get_db):
     email = "1@1.com"
     password = "test"
     create_test_user(client, email, password)
@@ -112,7 +111,7 @@ def test_get_post_by_id(client):
     assert response.json()["auto_reply_time"] == 0
 
 
-def test_create_post(client):
+def test_create_post(client, override_get_db):
     email = "1@1.com"
     password = "test"
     create_test_user(client, email, password)
@@ -122,13 +121,13 @@ def test_create_post(client):
         "/posts/", json=DEFAULT_POST_DATA, headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code == 201
-    assert response.json()["title"] == "Test title"
-    assert response.json()["text"] == "Test text"
+    assert response.json()["title"] == "test"
+    assert response.json()["text"] == "test"
     assert response.json()["auto_reply"] is False
     assert response.json()["auto_reply_time"] == 0
 
 
-def test_update_post(client):
+def test_update_post(client, override_get_db):
     email = "1@1.com"
     password = "test"
     create_test_user(client, email, password)
@@ -156,7 +155,7 @@ def test_update_post(client):
     assert response.json()["auto_reply_time"] == 0
 
 
-def test_delete_post(client):
+def test_delete_post(client, override_get_db):
     email = "1@1.com"
     password = "test"
     create_test_user(client, email, password)
@@ -170,7 +169,7 @@ def test_delete_post(client):
     assert response.status_code == 204
 
 
-def test_get_comments(client):
+def test_get_comments(client, override_get_db):
     email = "1@1.com"
     password = "test"
     create_test_user(client, email, password)
@@ -180,7 +179,7 @@ def test_get_comments(client):
     assert response.status_code == 200
 
 
-def test_create_comment(client):
+def test_create_comment(client, override_get_db):
     email = "1@1.com"
     password = "test"
     create_test_user(client, email, password)
@@ -198,7 +197,7 @@ def test_create_comment(client):
     assert response.status_code == 201
 
 
-def test_get_comments_with_post_id(client):
+def test_get_comments_with_post_id(client, override_get_db):
     email = "1@1.com"
     password = "test"
     create_test_user(client, email, password)
@@ -230,7 +229,7 @@ def test_get_comments_with_post_id(client):
     assert response.json()[0]["text"] == "Test comment 2"
 
 
-def test_get_comment_by_id(client):
+def test_get_comment_by_id(client, override_get_db):
     email = "1@1.com"
     password = "test"
     create_test_user(client, email, password)
@@ -250,7 +249,7 @@ def test_get_comment_by_id(client):
     assert response.json()["text"] == "Test comment"
 
 
-def test_update_comment(client):
+def test_update_comment(client, override_get_db):
     email = "1@1.com"
     password = "test"
     create_test_user(client, email, password)
@@ -274,7 +273,7 @@ def test_update_comment(client):
     assert response.json()["text"] == "Updated Test comment"
 
 
-def test_delete_comment(client):
+def test_delete_comment(client, override_get_db):
     email = "1@1.com"
     password = "test"
     create_test_user(client, email, password)
@@ -295,7 +294,7 @@ def test_delete_comment(client):
     assert response.status_code == 204
 
 
-def test_auto_blocking_post(client):
+def test_auto_blocking_post(client, override_get_db):
     email = "1@1.com"
     password = "test"
     create_test_user(client, email, password)
@@ -314,7 +313,7 @@ def test_auto_blocking_post(client):
     assert response.json()["is_blocked"] is True
 
 
-def test_auto_blocking_comment(client):
+def test_auto_blocking_comment(client, override_get_db):
     email = "1@1.com"
     password = "test"
     create_test_user(client, email, password)
@@ -331,7 +330,7 @@ def test_auto_blocking_comment(client):
     assert response.json()["is_blocked"] is True
 
 
-def test_comments_analysis(client):
+def test_comments_analysis(client, override_get_db):
     email = "1@1.com"
     password = "test"
     create_test_user(client, email, password)
