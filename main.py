@@ -48,7 +48,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return user
 
 
-@app.post("/register/", response_model=user_schemas.UserResponse)
+@app.post("/register/", response_model=user_schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def register(new_user: user_schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = user_crud.get_user_by_email(db, email=new_user.email)
     if db_user:
@@ -82,7 +82,7 @@ def get_posts(db: Session = Depends(get_db), current_user: User = Depends(get_cu
     return app_crud.get_all_posts(db=db)
 
 
-@app.post("/posts/", response_model=app_schemas.Post)
+@app.post("/posts/", response_model=app_schemas.Post, status_code=status.HTTP_201_CREATED)
 def create_post(post: app_schemas.PostCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return app_crud.create_post(db=db, post=post, author_id=current_user.id)
 
@@ -107,7 +107,7 @@ def get_comments(post_id: int | None = None, db: Session = Depends(get_db), curr
     return app_crud.get_all_comments(db=db, post_id=post_id)
 
 
-@app.post("/comments/", response_model=app_schemas.Comment)
+@app.post("/comments/", response_model=app_schemas.Comment, status_code=status.HTTP_201_CREATED)
 def create_comment(comment: app_schemas.CommentCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return app_crud.create_comment(db=db, comment=comment, author_id=current_user.id)
 

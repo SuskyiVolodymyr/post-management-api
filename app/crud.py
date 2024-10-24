@@ -46,10 +46,19 @@ def get_post_by_id(db: Session, post_id: int):
 
 
 def update_post(db: Session, post_id: int, post: schemas.PostCreate):
+    response = requests.get(
+        PROFANITY_FILTER_API.format(f"{post.title} {post.text}"),
+        headers={"X-Api-Key": os.getenv("API_NINJAS_KEY")},
+    )
+    is_blocked = False
+    if response.status_code == 200:
+        is_blocked = response.json()["has_profanity"]
     db_post = get_post_by_id(db=db, post_id=post_id)
+    db_post.title = post.title
     db_post.text = post.text
     db_post.auto_reply = post.auto_reply
     db_post.auto_reply_time = post.auto_reply_time
+    db_post.is_blocked = is_blocked
     db.commit()
     db.refresh(db_post)
     return db_post
@@ -107,8 +116,16 @@ def get_comment_by_id(db: Session, comment_id: int):
 
 
 def update_comment(db: Session, comment_id: int, comment: schemas.CommentCreate):
+    response = requests.get(
+        PROFANITY_FILTER_API.format(comment.text),
+        headers={"X-Api-Key": os.getenv("API_NINJAS_KEY")},
+    )
+    is_blocked = False
+    if response.status_code == 200:
+        is_blocked = response.json()["has_profanity"]
     db_comment = get_comment_by_id(db=db, comment_id=comment_id)
     db_comment.text = comment.text
+    db_comment.is_blocked = is_blocked
     db.commit()
     db.refresh(db_comment)
     return db_comment

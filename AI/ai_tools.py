@@ -11,7 +11,7 @@ load_dotenv()
 def generate_comment_reply(comment: str, post: str):
     vertexai.init(project=os.getenv("GCLOUD_PROJECT_ID"))
     prompt = Prompt(
-        prompt_data="Reply to this comment: {comment}\n\nPost: {post}",
+        prompt_data="Reply to this comment as if the author wrote it:\n\nComment: {comment}\n\nPost: {post}",
         model_name="gemini-1.5-flash-002",
         generation_config=generation_config,
         safety_settings=safety_settings,
