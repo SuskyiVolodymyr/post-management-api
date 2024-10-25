@@ -8,7 +8,7 @@ from vertexai.preview.prompts import Prompt
 load_dotenv()
 
 
-def generate_comment_reply(comment: str, post: str):
+def generate_comment_reply(comment: str, post: str) -> str:
     vertexai.init(project=os.getenv("GCLOUD_PROJECT_ID"))
     prompt = Prompt(
         prompt_data="Reply to this comment as if the author wrote it:\n\nComment: {comment}\n\nPost: {post}",

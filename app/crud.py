@@ -15,11 +15,11 @@ load_dotenv()
 PROFANITY_FILTER_API = "https://api.api-ninjas.com/v1/profanityfilter?text={}"
 
 
-def get_all_posts(db: Session):
+def get_all_posts(db: Session) -> list[models.Post]:
     return db.execute(select(models.Post)).scalars().all()
 
 
-def create_post(db: Session, post: schemas.PostCreate, author_id: int):
+def create_post(db: Session, post: schemas.PostCreate, author_id: int) -> models.Post:
     response = requests.get(
         PROFANITY_FILTER_API.format(f"{post.title} {post.text}"),
         headers={"X-Api-Key": os.getenv("API_NINJAS_KEY")},
@@ -41,11 +41,13 @@ def create_post(db: Session, post: schemas.PostCreate, author_id: int):
     return db_post
 
 
-def get_post_by_id(db: Session, post_id: int):
+def get_post_by_id(db: Session, post_id: int) -> models.Post | None:
     return db.execute(select(models.Post).where(models.Post.id == post_id)).scalar()
 
 
-def update_post(db: Session, post_id: int, post: schemas.PostCreate):
+def update_post(
+    db: Session, post_id: int, post: schemas.PostCreate
+) -> models.Post | None:
     response = requests.get(
         PROFANITY_FILTER_API.format(f"{post.title} {post.text}"),
         headers={"X-Api-Key": os.getenv("API_NINJAS_KEY")},
@@ -64,13 +66,13 @@ def update_post(db: Session, post_id: int, post: schemas.PostCreate):
     return db_post
 
 
-def delete_post(db: Session, post_id: int):
+def delete_post(db: Session, post_id: int) -> None:
     db_post = get_post_by_id(db=db, post_id=post_id)
     db.delete(db_post)
     db.commit()
 
 
-def get_all_comments(db: Session, post_id: int | None = None):
+def get_all_comments(db: Session, post_id: int | None = None) -> list[models.Comment]:
     queryset = db.query(models.Comment)
 
     if post_id:
@@ -79,7 +81,9 @@ def get_all_comments(db: Session, post_id: int | None = None):
     return queryset.all()
 
 
-def create_comment(db: Session, comment: schemas.CommentCreate, author_id: int):
+def create_comment(
+    db: Session, comment: schemas.CommentCreate, author_id: int
+) -> models.Comment:
     response = requests.get(
         PROFANITY_FILTER_API.format(comment.text),
         headers={"X-Api-Key": os.getenv("API_NINJAS_KEY")},
@@ -111,13 +115,15 @@ def create_comment(db: Session, comment: schemas.CommentCreate, author_id: int):
     return db_comment
 
 
-def get_comment_by_id(db: Session, comment_id: int):
+def get_comment_by_id(db: Session, comment_id: int) -> models.Comment | None:
     return db.execute(
         select(models.Comment).where(models.Comment.id == comment_id)
     ).scalar()
 
 
-def update_comment(db: Session, comment_id: int, comment: schemas.CommentCreate):
+def update_comment(
+    db: Session, comment_id: int, comment: schemas.CommentCreate
+) -> models.Comment | None:
     response = requests.get(
         PROFANITY_FILTER_API.format(comment.text),
         headers={"X-Api-Key": os.getenv("API_NINJAS_KEY")},
@@ -133,13 +139,13 @@ def update_comment(db: Session, comment_id: int, comment: schemas.CommentCreate)
     return db_comment
 
 
-def delete_comment(db: Session, comment_id: int):
+def delete_comment(db: Session, comment_id: int) -> None:
     db_comment = get_comment_by_id(db=db, comment_id=comment_id)
     db.delete(db_comment)
     db.commit()
 
 
-def comments_analysis(db: Session, date_from: str, date_to: str):
+def comments_analysis(db: Session, date_from: str, date_to: str) -> list[dict]:
     date_from_dt = datetime.strptime(date_from, "%Y-%m-%d")
     date_to_dt = datetime.strptime(date_to, "%Y-%m-%d")
 
